@@ -1,0 +1,201 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ABC Company Demo</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial; background: #f9f9f9; margin: 0; padding: 0; }
+    header { background: #2b7a78; color: white; padding: 20px; text-align: center; font-size: 24px; }
+    .container { max-width: 1000px; margin: 20px auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    select, button { padding: 10px; margin: 5px; font-size: 14px; border-radius: 5px; }
+    button { background: #3aafa9; color: white; border: none; cursor: pointer; }
+    button:hover { background: #2b7a78; }
+    #recommendation, #fundamentals, #marketMoodSection { margin-top: 20px; padding: 15px; background: #def2f1; border-radius: 5px; }
+    #reason, #simulated, #moodSummary { margin-top: 10px; font-style: italic; color: #555; }
+    .indicator-description { font-size: 12px; color: #777; margin: 5px 0; cursor: pointer; }
+    table { width: 100%; margin-top: 10px; border-collapse: collapse; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    th { background-color: #3aafa9; color: white; }
+    canvas { transition: width 0.5s; }
+  </style>
+</head>
+<body>
+
+<header>ABC Company – SmartTrade Demo</header>
+
+<div class="container">
+  <h3>Stock Chart</h3>
+  <canvas id="stockChart"></canvas>
+
+  <div>
+    <label>View:</label>
+    <button onclick="updateChart('daily')">Daily</button>
+    <button onclick="updateChart('weekly')">Weekly</button>
+    <button onclick="updateChart('monthly')">Monthly</button>
+    <button onclick="updateChart('yearly')">Yearly</button>
+  </div>
+
+  <div>
+    <label>Indicators:</label>
+    <select id="indicatorSelect">
+      <option value="">--Select--</option>
+      <option value="RSI">RSI</option>
+      <option value="MACD">MACD</option>
+      <option value="SMA">SMA</option>
+    </select>
+    <button onclick="showIndicatorInfo()">Show Definition</button>
+  </div>
+
+  <div id="indicatorInfo" class="indicator-description"></div>
+
+  <div>
+    <label>Inflation Scenario:</label>
+    <select id="inflationSelect">
+      <option value="2">Good (2%)</option>
+      <option value="3">Base (3%)</option>
+      <option value="5">Bad (5%)</option>
+    </select>
+    <button onclick="getRecommendation()">Get Recommendation</button>
+  </div>
+
+  <div id="recommendation">
+    📈 Recommendation: <b id="recText">—</b>
+    <div id="reason"></div>
+  </div>
+
+  <div id="fundamentals">
+    <h3>Fundamentals</h3>
+    <table>
+      <tr>
+        <th>Market Cap</th>
+        <th>P/E Ratio</th>
+        <th>P/B Ratio</th>
+        <th>Debt/Equity</th>
+        <th>ROE</th>
+        <th>EPS</th>
+      </tr>
+      <tr>
+        <td id="marketCap">₹50,000 Cr</td>
+        <td id="peRatio">25.0</td>
+        <td id="pbRatio">3.5</td>
+        <td id="deRatio">1.5</td>
+        <td id="roe">15%</td>
+        <td id="eps">5.0</td>
+      </tr>
+    </table>
+    <div id="simulated"></div>
+  </div>
+
+  <div id="marketMoodSection">
+    <h3>Market Mood</h3>
+    <canvas id="moodChart" width="400" height="200"></canvas>
+    <div id="moodSummary"></div>
+  </div>
+</div>
+
+<script>
+  let ctx = document.getElementById('stockChart').getContext('2d');
+  let chart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: [], datasets: [{ label: '₹ Price', data: [], borderColor: '#3aafa9', fill: false }] },
+    options: { responsive: true, plugins: { legend: { display: false } } }
+  });
+
+  function updateChart(period) {
+    let data = {
+      daily: { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], values: [120, 125, 130, 128, 135], width: '400px' },
+      weekly: { labels: ['W1', 'W2', 'W3', 'W4'], values: [110, 115, 120, 130], width: '600px' },
+      monthly: { labels: Array.from({length: 12}, (_,i) => `M${i+1}`), values: [100, 102, 104, 108, 110, 112, 115, 118, 120, 122, 125, 128], width: '800px' },
+      yearly: { labels: Array.from({length: 5}, (_,i) => `Y${2020 + i}`), values: [80, 90, 100, 110, 120], width: '1000px' }
+    };
+    let d = data[period];
+    document.getElementById('stockChart').style.width = d.width;
+    chart.data.labels = d.labels;
+    chart.data.datasets[0].data = d.values;
+    chart.update();
+  }
+
+  function showIndicatorInfo() {
+    const info = {
+      RSI: 'RSI: Measures momentum, identifies overbought or oversold conditions.',
+      MACD: 'MACD: Shows trend direction and momentum strength.',
+      SMA: 'SMA: Smooths price data to identify trends over time.'
+    };
+    const selected = document.getElementById('indicatorSelect').value;
+    document.getElementById('indicatorInfo').innerText = info[selected] || 'Select an indicator to see its definition.';
+  }
+
+  function getRecommendation() {
+    const indicator = document.getElementById('indicatorSelect').value;
+    const inflation = parseInt(document.getElementById('inflationSelect').value);
+    let rec = 'Hold';
+    let reason = 'Stable trend, no strong signals.';
+
+    if (indicator === 'RSI' && inflation <= 3) {
+      rec = 'Buy';
+      reason = 'RSI indicates upward momentum and inflation is stable.';
+    } else if (indicator === 'MACD' && inflation <= 3) {
+      rec = 'Buy';
+      reason = 'MACD shows positive trend and stable inflation.';
+    } else if (indicator === 'SMA' || inflation >= 5) {
+      rec = 'Sell';
+      reason = 'SMA suggests resistance or inflation risk is high.';
+    }
+
+    document.getElementById('recText').innerText = rec;
+    document.getElementById('reason').innerText = reason;
+    simulateFundamentals(inflation);
+    updateMoodChart();
+  }
+
+  function simulateFundamentals(inflation) {
+    let fundamentals = {
+      2: { cap: '₹50,000 Cr', pe: '25.0', pb: '3.5', de: '1.5', roe: '15%', eps: '5.0', text: 'Stable fundamentals with low inflation.' },
+      3: { cap: '₹48,000 Cr', pe: '24.0', pb: '3.3', de: '1.6', roe: '14%', eps: '4.8', text: 'Slight pressure from inflation.' },
+      5: { cap: '₹45,000 Cr', pe: '22.0', pb: '3.0', de: '1.8', roe: '12%', eps: '4.5', text: 'High inflation impacts fundamentals.' }
+    };
+    let f = fundamentals[inflation];
+    document.getElementById('marketCap').innerText = f.cap;
+    document.getElementById('peRatio').innerText = f.pe;
+    document.getElementById('pbRatio').innerText = f.pb;
+    document.getElementById('deRatio').innerText = f.de;
+    document.getElementById('roe').innerText = f.roe;
+    document.getElementById('eps').innerText = f.eps;
+    document.getElementById('simulated').innerText = `📊 Simulation: ${f.text}`;
+  }
+
+  // Market Mood Chart
+  let moodCtx = document.getElementById('moodChart').getContext('2d');
+  let moodChart = new Chart(moodCtx, {
+    type: 'bar',
+    data: {
+      labels: ['Positive', 'Neutral', 'Negative'],
+      datasets: [{ label: 'Mood (%)', data: [40, 40, 20], backgroundColor: ['#3aafa9', '#f6d55c', '#ed553b'] }]
+    },
+    options: {
+      responsive: true,
+      scales: { y: { beginAtZero: true, max: 100 } },
+      plugins: { legend: { display: false } }
+    }
+  });
+
+  function updateMoodChart() {
+    const moodData = [Math.floor(Math.random() * 50) + 30, Math.floor(Math.random() * 20) + 20, Math.floor(Math.random() * 20) + 10];
+    moodChart.data.datasets[0].data = moodData;
+    moodChart.update();
+    const maxIndex = moodData.indexOf(Math.max(...moodData));
+    const moodNames = ['Positive', 'Neutral', 'Negative'];
+    document.getElementById('moodSummary').innerText = `🧭 Current Market Mood: ${moodNames[maxIndex]}`;
+  }
+
+  // Initialize with daily chart and mood
+  updateChart('daily');
+  updateMoodChart();
+</script>
+
+</body>
+</html>
